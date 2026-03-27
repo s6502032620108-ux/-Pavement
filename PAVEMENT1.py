@@ -3,63 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ออกแบบโครงสร้างชั้นทาง</title>
+<title>Pavement Design Pro</title>
 
 <style>
 body {
   font-family: sans-serif;
-  background: #0d1117;
-  color: #e6edf3;
-  padding: 20px;
+  background:#0d1117;
+  color:#e6edf3;
+  padding:20px;
 }
 .card {
-  background: #161b22;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
+  background:#161b22;
+  padding:20px;
+  border-radius:10px;
+  margin-bottom:20px;
 }
 input {
-  width: 100%;
-  padding: 8px;
-  margin-top: 5px;
-  background: #0d1117;
-  color: white;
-  border: 1px solid #30363d;
+  width:100%;
+  padding:8px;
+  margin-bottom:10px;
+  background:#0d1117;
+  border:1px solid #30363d;
+  color:white;
 }
 button {
-  margin-top: 15px;
-  padding: 10px;
-  width: 100%;
-  background: orange;
-  border: none;
-  cursor: pointer;
+  width:100%;
+  padding:12px;
+  background:orange;
+  border:none;
+  cursor:pointer;
 }
 .result {
-  margin-top: 15px;
-  padding: 10px;
-  background: #0d1117;
+  margin-top:15px;
+  padding:15px;
+  background:#0d1117;
 }
-.tabs button {
-  padding: 10px;
-  margin-right: 5px;
+.layer {
+  padding:8px;
+  margin:5px 0;
+  background:#161b22;
 }
-.hidden { display: none; }
 </style>
 </head>
 
 <body>
 
-<h2>🛣️ ออกแบบโครงสร้างชั้นทาง</h2>
+<h2>🛣️ Pavement Design (AASHTO 1993)</h2>
 
-<div class="tabs">
-  <button onclick="showTab('ac')">Flexible (AC)</button>
-  <button onclick="showTab('rigid')">Rigid (Concrete)</button>
-</div>
+<div class="card">
 
-<!-- ================= FLEXIBLE ================= -->
-<div id="ac" class="card">
-
-<h3>Flexible Pavement (AASHTO 1993)</h3>
+<h3>Input</h3>
 
 <label>W18 (ล้าน ESAL)</label>
 <input id="w18" type="number" value="2.5">
@@ -76,65 +69,82 @@ button {
 <label>MR (psi)</label>
 <input id="mr" type="number" value="8000">
 
-<button onclick="calcSN()">คำนวณ SN</button>
+<hr>
 
-<div id="resultSN" class="result"></div>
+<h3>Material Coefficient</h3>
 
-</div>
+<label>a1 (AC)</label>
+<input id="a1" type="number" value="0.44">
 
-<!-- ================= RIGID ================= -->
-<div id="rigid" class="card hidden">
+<label>a2 (Base)</label>
+<input id="a2" type="number" value="0.14">
 
-<h3>Rigid Pavement (อย่างง่าย)</h3>
+<label>a3 (Subbase)</label>
+<input id="a3" type="number" value="0.11">
 
-<label>k (pci)</label>
-<input id="k" type="number" value="100">
+<label>m2 (Base drainage)</label>
+<input id="m2" type="number" value="1">
 
-<label>โหลด (kN)</label>
-<input id="load" type="number" value="40">
+<label>m3 (Subbase drainage)</label>
+<input id="m3" type="number" value="1">
 
-<button onclick="calcRigid()">คำนวณความหนา</button>
+<button onclick="calculate()">คำนวณ</button>
 
-<div id="resultRigid" class="result"></div>
+<div id="output" class="result"></div>
 
 </div>
 
 <script>
 
-// ================= TAB =================
-function showTab(tab) {
-  document.getElementById("ac").classList.add("hidden");
-  document.getElementById("rigid").classList.add("hidden");
-  document.getElementById(tab).classList.remove("hidden");
-}
+function calculate() {
 
-// ================= FLEXIBLE =================
-function calcSN() {
-  let W18 = parseFloat(document.getElementById("w18").value) * 1000000;
+  let W18 = parseFloat(document.getElementById("w18").value) * 1e6;
   let ZR = parseFloat(document.getElementById("zr").value);
   let So = parseFloat(document.getElementById("so").value);
   let dpsi = parseFloat(document.getElementById("dpsi").value);
   let MR = parseFloat(document.getElementById("mr").value);
 
-  // สูตร AASHTO (simplified)
+  let a1 = parseFloat(document.getElementById("a1").value);
+  let a2 = parseFloat(document.getElementById("a2").value);
+  let a3 = parseFloat(document.getElementById("a3").value);
+  let m2 = parseFloat(document.getElementById("m2").value);
+  let m3 = parseFloat(document.getElementById("m3").value);
+
+  // ====== AASHTO SN ======
   let logW = Math.log10(W18);
 
   let SN = (logW + ZR*So - Math.log10(dpsi/2.7)) / 0.4;
 
-  document.getElementById("resultSN").innerHTML =
-    "SN ≈ " + SN.toFixed(2);
-}
+  // ====== Design Layer ======
+  // กำหนดขั้นต่ำ
+  let D1 = 5; // inch AC
+  let SN1 = a1 * D1;
 
-// ================= RIGID =================
-function calcRigid() {
-  let k = parseFloat(document.getElementById("k").value);
-  let load = parseFloat(document.getElementById("load").value);
+  let remainingSN = SN - SN1;
 
-  // สูตรง่าย (approx)
-  let thickness = Math.pow(load / k, 0.5) * 10;
+  let D2 = remainingSN / (a2 * m2);
 
-  document.getElementById("resultRigid").innerHTML =
-    "ความหนาประมาณ ≈ " + thickness.toFixed(2) + " cm";
+  // limit base
+  if (D2 > 10) {
+    D2 = 10;
+  }
+
+  let SN2 = a1*D1 + a2*m2*D2;
+
+  let D3 = (SN - SN2) / (a3 * m3);
+
+  if (D3 < 4) D3 = 4;
+
+  // convert to cm
+  let cm = 2.54;
+
+  document.getElementById("output").innerHTML = `
+    <b>Structural Number (SN) = ${SN.toFixed(2)}</b>
+
+    <div class="layer">AC = ${D1.toFixed(2)} in (${(D1*cm).toFixed(1)} cm)</div>
+    <div class="layer">Base = ${D2.toFixed(2)} in (${(D2*cm).toFixed(1)} cm)</div>
+    <div class="layer">Subbase = ${D3.toFixed(2)} in (${(D3*cm).toFixed(1)} cm)</div>
+  `;
 }
 
 </script>
