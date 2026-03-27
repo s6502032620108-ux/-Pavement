@@ -1,10 +1,10 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# ตั้งค่าหน้ากระดาษให้กว้างเพื่อความสวยงาม
-st.set_page_config(page_title="AC Pavement Design", layout="wide")
+# ตั้งค่าหน้ากระดาษ Streamlit
+st.set_page_config(page_title="Pavement Design System", layout="wide")
 
-html_code = """
+html_all_in_one = """
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -12,134 +12,135 @@ html_code = """
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 <style>
     :root {
-        --primary: #f0a500;
         --bg: #0d1117;
-        --card: #161b22;
+        --panel: #161b22;
         --border: #30363d;
+        --accent: #f0a500;
         --text: #e6edf3;
+        --ac-color: #374151;
+        --con-color: #94a3b8;
+        --base-color: #854d0e;
+        --subgrade-color: #166534;
     }
-    body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-    .container { max-width: 1000px; margin: auto; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    h2 { color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-    label { display: block; margin-top: 10px; font-size: 0.9rem; color: #8b949e; }
-    input { width: 100%; padding: 10px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; font-family: 'IBM Plex Mono'; }
-    .btn { width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
-    .btn:hover { opacity: 0.8; transform: translateY(-2px); }
-    .result-section { background: #010409; border-left: 5px solid #3fb950; padding: 20px; border-radius: 8px; display: none; }
-    .formula { font-style: italic; color: #58a6ff; background: rgba(88,166,255,0.1); padding: 10px; border-radius: 5px; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+    
+    /* Tabs */
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+    .tab-btn { padding: 10px 20px; background: none; border: none; color: #8b949e; cursor: pointer; font-size: 1rem; font-weight: bold; }
+    .tab-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 25px; }
+    
+    label { display: block; margin-top: 10px; font-size: 0.85rem; color: #8b949e; }
+    input { width: 100%; padding: 8px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; font-family: 'IBM Plex Mono'; }
+    .btn { width: 100%; padding: 15px; background: var(--accent); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+    
+    /* Diagram */
+    .diagram-container { background: #010409; padding: 20px; border-radius: 10px; border: 1px solid var(--border); text-align: center; }
+    .road-layer { margin: 0 auto; width: 80%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; transition: height 0.4s; border: 1px solid rgba(255,255,255,0.1); }
+    .layer-label { margin-left: 10px; font-family: 'IBM Plex Mono'; color: var(--accent); font-size: 0.85rem; }
 </style>
 </head>
 <body>
-<div class="container">
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('ac')">🔲 Flexible (AC)</button>
+    <button class="tab-btn" onclick="switchTab('concrete')">⬜ Rigid (Concrete)</button>
+</div>
+
+<div id="tab-ac" class="tab-content active">
     <div class="card">
-        <h2>🛣️ ออกแบบความหนาชั้นทาง Asphalt Concrete (AC)</h2>
-        <p class="formula">โครงสร้างหลัก: SN = (a1 × D1) + (a2 × D2 × m2) + (a3 × D3 × m3)</p>
-        
+        <h2 style="color:var(--accent)">Asphalt Concrete Design (AASHTO 1993)</h2>
         <div class="grid">
             <div>
-                <h3>1. ข้อมูลจราจร & ดิน</h3>
-                <label>W18 (ปริมาณจราจรสะสม - ล้าน ESALs)</label>
-                <input type="number" id="w18" value="2.5" step="0.1">
-                <label>Reliability (ZR) - [90% = -1.282]</label>
-                <input type="number" id="zr" value="-1.282">
-                <label>Standard Deviation (So)</label>
-                <input type="number" id="so" value="0.45">
-                <label>Subgrade Resilient Modulus (MR - psi)</label>
-                <input type="number" id="mr" value="7500">
+                <label>จราจรสะสม (W18 - Million ESALs)</label>
+                <input type="number" id="ac_w18" value="2.5">
+                <label>Subgrade MR (psi)</label>
+                <input type="number" id="ac_mr" value="7500">
+                <label>ความหนา Base (D2) - นิ้ว</label>
+                <input type="number" id="ac_d2" value="8">
+                <button class="btn" onclick="calcAC()">⚡ คำนวณความหนา AC</button>
+                <div id="ac_res" style="margin-top:15px; color:#3fb950; font-weight:bold;"></div>
             </div>
-
-            <div>
-                <h3>2. ค่าสัมประสิทธิ์ชั้นทาง (a, m, D)</h3>
-                <label>a1 (Surface - AC) [ปกติ 0.44]</label>
-                <input type="number" id="a1" value="0.44" step="0.01">
-                
-                <label>a2 (Base) & m2 (Drainage) [ปกติ 0.14, 1.0]</label>
-                <div style="display:flex; gap:10px;">
-                    <input type="number" id="a2" value="0.14" step="0.01">
-                    <input type="number" id="m2" value="1.0" step="0.1">
-                </div>
-                <label>ความหนา Base ที่กำหนด (D2 - นิ้ว)</label>
-                <input type="number" id="d2" value="8">
-
-                <label>a3 (Subbase) & m3 (Drainage) [ปกติ 0.11, 1.0]</label>
-                <div style="display:flex; gap:10px;">
-                    <input type="number" id="a3" value="0.11" step="0.01">
-                    <input type="number" id="m3" value="1.0" step="0.1">
-                </div>
-                <label>ความหนา Subbase ที่กำหนด (D3 - นิ้ว)</label>
-                <input type="number" id="d3" value="6">
+            <div class="diagram-container">
+                <h4>AC Cross-Section</h4>
+                <div id="ac_vis_1" class="road-layer" style="background:var(--ac-color); height:30px;">SURFACE (AC)</div>
+                <div id="ac_vis_2" class="road-layer" style="background:var(--base-color); height:60px;">BASE</div>
+                <div class="road-layer" style="background:var(--subgrade-color); height:40px;">SUBGRADE</div>
             </div>
         </div>
-
-        <button class="btn" onclick="calculateDesign()">⚡ คำนวณความหนาผิวทาง AC (D1)</button>
     </div>
+</div>
 
-    <div id="resultBox" class="result-section">
-        <h3>✅ สรุปผลการออกแบบ</h3>
-        <div id="resultContent"></div>
+<div id="tab-concrete" class="tab-content">
+    <div class="card">
+        <h2 style="color:var(--accent)">Rigid Pavement Design (AASHTO/PCA)</h2>
+        <div class="grid">
+            <div>
+                <label>จราจรสะสม (W18 - Million ESALs)</label>
+                <input type="number" id="c_w18" value="5.0">
+                <label>Modulus of Rupture (Sc - psi)</label>
+                <input type="number" id="c_sc" value="650">
+                <label>Subgrade k-value (pci)</label>
+                <input type="number" id="c_k" value="150">
+                <button class="btn" onclick="calcConcrete()">⚡ คำนวณความหนา Concrete</button>
+                <div id="c_res" style="margin-top:15px; color:#3fb950; font-weight:bold;"></div>
+            </div>
+            <div class="diagram-container">
+                <h4>Concrete Cross-Section</h4>
+                <div id="c_vis_1" class="road-layer" style="background:var(--con-color); height:40px; color:#000;">CONCRETE SLAB</div>
+                <div id="c_vis_2" class="road-layer" style="background:var(--base-color); height:40px;">SUBBASE</div>
+                <div class="road-layer" style="background:var(--subgrade-color); height:40px;">SUBGRADE</div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-function calculateDesign() {
-    // 1. รับค่าจาก Input
-    const w18_mil = parseFloat(document.getElementById('w18').value);
-    const w18 = w18_mil * 1000000;
-    const zr = parseFloat(document.getElementById('zr').value);
-    const so = parseFloat(document.getElementById('so').value);
-    const mr = parseFloat(document.getElementById('mr').value);
-    const dpsi = 1.9; // ค่ากลางสำหรับการสูญเสียความราบเรียบ
+function switchTab(type) {
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + type).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
 
-    const a1 = parseFloat(document.getElementById('a1').value);
-    const a2 = parseFloat(document.getElementById('a2').value);
-    const m2 = parseFloat(document.getElementById('m2').value);
-    const d2 = parseFloat(document.getElementById('d2').value);
-    const a3 = parseFloat(document.getElementById('a3').value);
-    const m3 = parseFloat(document.getElementById('m3').value);
-    const d3 = parseFloat(document.getElementById('d3').value);
-
-    // 2. คำนวณหา SN ที่ต้องการ (Required SN) ด้วยวิธี Newton-Raphson หรือ Iteration
-    let sn_req = 3.0; 
-    const target = Math.log10(w18);
-    for (let i = 0; i < 200; i++) {
-        let log_w18 = zr * so + 9.36 * Math.log10(sn_req + 1) - 0.20 + 
-                      Math.log10(dpsi/2.7) / (0.40 + 1094 / Math.pow(sn_req + 1, 5.19)) + 
-                      2.32 * Math.log10(mr) - 8.07;
-        if (Math.abs(log_w18 - target) < 0.0001) break;
-        sn_req += (target - log_w18) * 0.1;
-    }
-
-    // 3. คำนวณความแข็งแรงของชั้นพื้นทางและรองพื้นทาง (SN_base + SN_subbase)
-    const sn_existing = (a2 * d2 * m2) + (a3 * d3 * m3);
-
-    // 4. หาความหนา D1 (Surface)
-    let d1_req = (sn_req - sn_existing) / a1;
-    if (d1_req < 2) d1_req = 2; // ความหนาขั้นต่ำตามมาตรฐาน 2 นิ้ว (5 ซม.)
-
-    // ปัดขึ้นเป็นเลขสวยๆ (ทุก 0.5 นิ้ว)
-    const d1_final = Math.ceil(d1_req * 2) / 2;
-    const sn_provided = (a1 * d1_final) + sn_existing;
-
-    // 5. แสดงผล
-    const resBox = document.getElementById('resultBox');
-    const resCont = document.getElementById('resultContent');
+function calcAC() {
+    const w18 = parseFloat(document.getElementById('ac_w18').value) * 1e6;
+    const mr = parseFloat(document.getElementById('ac_mr').value);
+    const d2 = parseFloat(document.getElementById('ac_d2').value);
     
-    resBox.style.display = 'block';
-    resCont.innerHTML = `
-        <p>ค่า SN ที่ต้องการจากจราจร (Required SN): <b>${sn_req.toFixed(3)}</b></p>
-        <p>ความแข็งแรงจากชั้นรอง (SN 2+3): <b>${sn_existing.toFixed(3)}</b></p>
-        <hr style="border:0.5px solid #30363d">
-        <p>ความหนาชั้นผิวทาง AC ที่คำนวณได้: <b>${d1_req.toFixed(2)} นิ้ว</b></p>
-        <p style="font-size: 1.2rem;">👉 สรุปความหนา D1 ที่แนะนำ: <span style="color:var(--primary); font-weight:bold;">${d1_final} นิ้ว (${(d1_final * 2.54).toFixed(1)} ซม.)</span></p>
-        <p>ค่า SN ที่ได้จริง (Provided SN): <b style="color:#3fb950;">${sn_provided.toFixed(3)}</b> (ต้องมากกว่า Required SN)</p>
-    `;
+    // AASHTO Iteration (Simplified)
+    let sn_req = 3.0;
+    for(let i=0; i<100; i++) {
+        let logW = -1.282 * 0.45 + 9.36 * Math.log10(sn_req+1) - 0.20 + 0.35 + 2.32 * Math.log10(mr) - 8.07;
+        sn_req += (Math.log10(w18) - logW) * 0.1;
+    }
+    
+    let d1 = (sn_req - (0.14 * d2)) / 0.44;
+    d1 = Math.max(2, Math.ceil(d1 * 2) / 2);
+    
+    document.getElementById('ac_res').innerText = "แนะนำความหนา AC (D1): " + d1 + " นิ้ว (" + (d1*2.54).toFixed(1) + " ซม.)";
+    document.getElementById('ac_vis_1').style.height = (d1 * 10) + "px";
+    document.getElementById('ac_vis_2').style.height = (d2 * 5) + "px";
+}
+
+function calcConcrete() {
+    const w18 = parseFloat(document.getElementById('c_w18').value) * 1e6;
+    const sc = parseFloat(document.getElementById('c_sc').value);
+    
+    // AASHTO Rigid (Simplified Empirical)
+    let d = Math.pow((Math.log10(w18) * 1000) / (sc), 0.7);
+    d = Math.max(6, Math.ceil(d * 2) / 2);
+    
+    document.getElementById('c_res').innerText = "แนะนำความหนา Concrete (D): " + d + " นิ้ว (" + (d*2.54).toFixed(1) + " ซม.)";
+    document.getElementById('c_vis_1').style.height = (d * 8) + "px";
 }
 </script>
 </body>
 </html>
 """
 
-# แสดงผลผ่าน Streamlit
-components.html(html_code, height=900, scrolling=True)
+components.html(html_all_in_one, height=750, scrolling=True)
