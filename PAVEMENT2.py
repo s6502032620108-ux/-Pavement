@@ -1,9 +1,9 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Pavement Engineering Tool", layout="wide")
+st.set_page_config(page_title="Rigid Pavement Field Design", layout="wide")
 
-html_engineering_system = """
+html_concrete_system = """
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -11,26 +11,26 @@ html_engineering_system = """
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 <style>
     :root {
-        --bg: #0d1117; --card: #161b22; --border: #30363d; --accent: #f0a500; --text: #e6edf3;
-        --ac: #374151; --base: #854d0e; --sb: #a16207; --sg: #166534;
+        --bg: #0d1117; --card: #161b22; --border: #30363d; --accent: #00d2ff; --text: #e6edf3;
+        --slab: #e2e8f0; --base: #854d0e; --sg: #166534;
     }
     body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
     .container { max-width: 1200px; margin: auto; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
     h2, h3 { color: var(--accent); margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-    h4 { color: #58a6ff; margin: 10px 0 5px 0; font-size: 0.9rem; }
+    h4 { color: #58a6ff; margin: 15px 0 5px 0; font-size: 0.9rem; border-left: 3px solid var(--accent); padding-left: 10px; }
     
     .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     label { display: block; font-size: 0.75rem; color: #8b949e; margin-bottom: 3px; }
     input, select { width: 100%; padding: 8px; background: #0d1117; border: 1px solid var(--border); color: #fff; border-radius: 6px; font-family: 'IBM Plex Mono'; }
     
-    .btn { width: 100%; padding: 18px; background: var(--accent); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 1rem; }
-    .result-panel { background: #010409; border: 1px solid #3fb950; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; }
+    .btn { width: 100%; padding: 18px; background: var(--accent); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 1rem; color: #000; }
+    .note-panel { background: #010409; border-left: 4px solid var(--accent); padding: 15px; border-radius: 4px; margin-top: 15px; display: none; font-size: 0.9rem; line-height: 1.6; }
     
-    .diagram-area { background: #010409; border: 1px solid var(--border); border-radius: 10px; padding: 30px; min-height: 450px; text-align: center; }
-    .layer { margin: 0 auto; width: 70%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); transition: 0.5s; position: relative; }
-    .layer-info { position: absolute; left: 105%; white-space: nowrap; color: var(--accent); font-family: 'IBM Plex Mono'; font-size: 0.8rem; text-align: left; }
+    .diagram-area { background: #010409; border: 1px solid var(--border); border-radius: 10px; padding: 40px 20px; min-height: 450px; text-align: center; }
+    .slab-layer { margin: 0 auto; width: 75%; background: var(--slab); color: #1e293b; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #94a3b8; transition: height 0.5s ease; position: relative; }
+    .dim-line { position: absolute; left: calc(100% + 15px); color: var(--accent); font-family: 'IBM Plex Mono'; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -38,141 +38,126 @@ html_engineering_system = """
     <div class="grid">
         <div>
             <div class="card">
-                <h3>🛠️ 1. ข้อมูลจากหน้าสนาม (Field Data)</h3>
+                <h3>🛠️ ขั้นตอนที่ 1: ข้อมูลสนาม (Field Data)</h3>
                 
-                <h4>🔍 ข้อมูลดิน (Subgrade)</h4>
+                <h4>🚛 ข้อมูลจราจร (Traffic Analysis)</h4>
                 <div class="input-row">
-                    <div>
-                        <label>ค่า CBR (%) จากการทดสอบ</label>
-                        <input type="number" id="f_cbr" value="5" oninput="convertCBR()">
-                    </div>
-                    <div>
-                        <label>MR ที่คำนวณได้ (psi)</label>
-                        <input type="number" id="f_mr" value="7500">
-                    </div>
-                </div>
-
-                <h4>🚛 ข้อมูลจราจร (Traffic Count)</h4>
-                <div class="input-row">
-                    <div><label>จำนวนรถบรรทุก (คัน/วัน)</label><input type="number" id="f_trucks" value="500"></div>
-                    <div><label>อายุออกแบบ (ปี)</label><input type="number" id="f_years" value="15"></div>
+                    <div><label>จำนวนรถบรรทุก (คัน/วัน/ทิศทาง)</label><input type="number" id="f_truck" value="800"></div>
+                    <div><label>อายุออกแบบ (ปี)</label><input type="number" id="f_years" value="20"></div>
                 </div>
                 <div class="input-row">
                     <div>
-                        <label>ประเภทรถเด่น</label>
-                        <select id="f_tf_type">
-                            <option value="1.1">รถบรรทุก 10 ล้อ (TF=1.1)</option>
-                            <option value="2.2">รถพ่วง (TF=2.2)</option>
-                            <option value="0.3">รถบรรทุก 6 ล้อ (TF=0.3)</option>
+                        <label>ประเภทรถ (TF)</label>
+                        <select id="f_tf">
+                            <option value="1.2">รถบรรทุก 10 ล้อ (TF=1.2)</option>
+                            <option value="2.5">รถพ่วง/เทรลเลอร์ (TF=2.5)</option>
+                            <option value="0.4">รถ 6 ล้อใหญ่ (TF=0.4)</option>
                         </select>
                     </div>
-                    <div><label>อัตราเติบโต (%)</label><input type="number" id="f_growth" value="3"></div>
+                    <div><label>Growth Rate (%)</label><input type="number" id="f_growth" value="4"></div>
+                </div>
+
+                <h4>🌱 ข้อมูลดินฐานราก (Subgrade Data)</h4>
+                <div class="input-row">
+                    <div><label>ค่า CBR ดินเดิม (%)</label><input type="number" id="f_cbr" value="4"></div>
+                    <div><label>k-value (psi/in) - คำนวณให้</label><input type="number" id="f_k" disabled></div>
                 </div>
             </div>
 
             <div class="card">
-                <h3>🏗️ 2. ข้อมูลวัสดุโครงสร้าง</h3>
+                <h3>📐 ขั้นตอนที่ 2: เลือกชนิดและวัสดุ</h3>
                 <div class="input-row">
-                    <div><label>a1 (ความแกร่ง AC)</label><input type="number" id="f_a1" value="0.44"></div>
-                    <div><label>a2 (ความแกร่ง Base)</label><input type="number" id="f_a2" value="0.14"></div>
+                    <div>
+                        <label>ประเภทคอนกรีต</label>
+                        <select id="f_type">
+                            <option value="JPCP">JPCP (มีรอยต่อ+Dowel)</option>
+                            <option value="JRCP">JRCP (มีเหล็กตะแกรง)</option>
+                            <option value="CRCP">CRCP (เหล็กเสริมต่อเนื่อง)</option>
+                        </select>
+                    </div>
+                    <div><label>กำลังรับแรงดัด (Sc - psi)</label><input type="number" id="f_sc" value="650"></div>
                 </div>
-                <div class="input-row">
-                    <div><label>D2 (หนา Base - นิ้ว)</label><input type="number" id="f_d2" value="8"></div>
-                    <div><label>D3 (หนา Subbase - นิ้ว)</label><input type="number" id="f_d3" value="6"></div>
-                </div>
-                <button class="btn" onclick="processEngineering()">⚡ คำนวณและสรุปรายการ</button>
+                <button class="btn" onclick="calculateRigidField()">⚡ เริ่มคำนวณออกแบบ</button>
             </div>
         </div>
 
         <div>
-            <div id="eng_res" class="result-panel">
-                <h3 style="border:none; color:#3fb950;">📋 รายการคำนวณ (Calculation Note)</h3>
-                <div id="eng_content" style="font-size: 0.9rem; line-height: 1.6;"></div>
+            <div id="result_note" class="note-panel">
+                <h3 style="border:none; margin-bottom:10px;">📋 สรุปรายการคำนวณ</h3>
+                <div id="calc_steps"></div>
             </div>
 
             <div class="diagram-area">
-                <h4 style="text-align:center; color:#8b949e;">Final Pavement Section</h4>
-                <div id="v_ac" class="layer" style="background:var(--ac); height:40px; color:#fff;">
-                    SURFACE (AC) <div id="lbl_ac" class="layer-info"></div>
+                <h4 style="text-align:center; border:none; color:#8b949e;">Concrete Cross-Section Visualizer</h4>
+                <div id="v_slab" class="slab-layer" style="height: 60px;">
+                    CONCRETE SLAB <div id="dim_slab" class="dim-line">D = ?</div>
                 </div>
-                <div id="v_base" class="layer" style="background:var(--base); height:80px; color:#fff;">
-                    BASE COURSE <div id="lbl_base" class="layer-info"></div>
-                </div>
-                <div id="v_sb" class="layer" style="background:var(--sb); height:60px; color:#fff;">
-                    SUBBASE <div id="lbl_sb" class="layer-info"></div>
-                </div>
-                <div class="layer" style="background:var(--sg); height:40px; color:#fff;">
-                    SUBGRADE (ดินเดิม) <div id="lbl_sg" class="layer-info"></div>
-                </div>
+                <div style="margin:0 auto; width:75%; background:var(--base); height:50px; border:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.8rem;">BASE COURSE (15-20 cm)</div>
+                <div style="margin:0 auto; width:75%; background:var(--sg); height:40px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.8rem;">SUBGRADE</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-function convertCBR() {
-    // สูตรแปลง CBR เป็น MR (psi) โดยทั่วไปคือ MR = 1500 * CBR
+function calculateRigidField() {
+    // 1. แปลง CBR เป็น k-value
     const cbr = parseFloat(document.getElementById('f_cbr').value);
-    const mr = cbr * 1500;
-    document.getElementById('f_mr').value = mr;
-}
+    // สูตรโดยประมาณ: k (pci) = CBR * 40 (สำหรับ CBR < 10) หรือตามตารางความสัมพันธ์
+    let k_val = cbr * 35; 
+    document.getElementById('f_k').value = Math.round(k_val);
 
-function processEngineering() {
-    // 1. คำนวณหา W18 จากข้อมูลสนาม
-    const trucks = parseFloat(document.getElementById('f_trucks').value);
-    const tf = parseFloat(document.getElementById('f_tf_type').value);
+    // 2. คำนวณ W18 (ESAL)
+    const trucks = parseFloat(document.getElementById('f_truck').value);
+    const tf = parseFloat(document.getElementById('f_tf').value);
     const years = parseFloat(document.getElementById('f_years').value);
     const growth = parseFloat(document.getElementById('f_growth').value) / 100;
-    
-    const growth_factor = growth > 0 ? (Math.pow(1 + growth, years) - 1) / growth : years;
-    const w18 = trucks * tf * 365 * growth_factor * 0.5; // Lane Factor 0.5
+    const growth_factor = (Math.pow(1 + growth, years) - 1) / growth;
+    const w18 = trucks * tf * 365 * growth_factor;
 
-    // 2. คำนวณ SN Required (AASHTO)
-    const mr = parseFloat(document.getElementById('f_mr').value);
-    const zr = -1.282; // 90% Reliability
-    const so = 0.45;
-    const dpsi = 1.9;
-    
-    let sn_req = 1.0;
+    // 3. กำหนดค่า J ตามประเภทคอนกรีต
+    const type = document.getElementById('f_type').value;
+    let J = 3.2; // Default for JPCP/JRCP with Dowels
+    if (type === 'CRCP') J = 2.6;
+
+    // 4. คำนวณหาความหนา D (AASHTO Rigid Equation Iteration)
+    const Sc = parseFloat(document.getElementById('f_sc').value);
+    const Ec = 4000000; // Modulus คอนกรีตมาตรฐาน
+    const Cd = 1.0;     // การระบายน้ำปกติ
+    const Zr = -1.282;  // Reliability 90%
+    const So = 0.35;
+    const dPSI = 1.7;
+
+    let D = 6.0;
     const target = Math.log10(w18);
-    for(let i=0; i<200; i++) {
-        let logW = zr * so + 9.36 * Math.log10(sn_req + 1) - 0.2 + Math.log10(dpsi/2.7)/(0.4 + 1094/Math.pow(sn_req+1, 5.19)) + 2.32*Math.log10(mr) - 8.07;
-        sn_req += (target - logW) * 0.1;
+    for(let i=0; i<300; i++) {
+        let term1 = Zr * So + 7.35 * Math.log10(D + 1) - 0.06;
+        let term2 = Math.log10(dPSI / 3.0) / (1 + 1.62e7 / Math.pow(D + 1, 8.46));
+        let term3 = (4.22 - 0.32 * 1.5) * Math.log10( (Sc * Cd * (Math.pow(D, 0.75) - 1.132)) / (215.63 * J * (Math.pow(D, 0.75) - 18.42 / Math.pow(Ec/k_val, 0.25))) );
+        let logW = term1 + term2 + term3;
+        if (Math.abs(logW - target) < 0.001) break;
+        D += (target - logW) * 0.1;
     }
 
-    // 3. หาความหนา D1
-    const a1 = parseFloat(document.getElementById('f_a1').value);
-    const a2 = parseFloat(document.getElementById('f_a2').value);
-    const d2 = parseFloat(document.getElementById('f_d2').value);
-    const d3 = parseFloat(document.getElementById('f_d3').value);
-    const a3 = 0.11;
-    
-    const sn_existing = (a2 * d2) + (a3 * d3);
-    let d1 = (sn_req - sn_existing) / a1;
-    d1 = Math.max(2, Math.ceil(d1 * 2) / 2);
+    const finalD = Math.max(6, Math.ceil(D * 2) / 2); // ปัดขึ้น 0.5 นิ้ว
 
-    // 4. สรุปผลลัพธ์
-    document.getElementById('eng_res').style.display = 'block';
-    document.getElementById('eng_content').innerHTML = `
-        • <b>Traffic:</b> W18 = ${w18.toLocaleString(undefined, {maximumFractionDigits:0})} ESALs<br>
-        • <b>Soil:</b> Resilient Modulus (MR) = ${mr.toLocaleString()} psi<br>
-        • <b>Structure:</b> SN Required = ${sn_req.toFixed(3)}<br>
-        • <b>Design:</b> แนะนำความหนา AC = <span style="color:var(--accent); font-size:1.1rem;">${d1} นิ้ว (${(d1*2.54).toFixed(1)} ซม.)</span>
+    // 5. แสดงผลรายการคำนวณ
+    document.getElementById('result_note').style.display = 'block';
+    document.getElementById('calc_steps').innerHTML = `
+        <b>1. Traffic Analysis:</b> W18 = ${w18.toLocaleString(undefined, {maximumFractionDigits:0})} ESALs<br>
+        <b>2. Foundation:</b> CBR ${cbr}% แปลงเป็นค่า k = ${Math.round(k_val)} psi/in<br>
+        <b>3. Design Parameter:</b> ใช้ค่า J = ${J} (${type})<br>
+        <hr style="border:0.5px solid var(--border)">
+        <b style="color:var(--accent)">4. ผลลัพธ์: ความหนา Slab (D) = ${finalD} นิ้ว (${(finalD*2.54).toFixed(1)} ซม.)</b>
     `;
 
-    // 5. อัปเดตกราฟิก
-    document.getElementById('v_ac').style.height = (d1 * 12) + 'px';
-    document.getElementById('v_base').style.height = (d2 * 10) + 'px';
-    document.getElementById('v_sb').style.height = (d3 * 10) + 'px';
-    
-    document.getElementById('lbl_ac').innerHTML = `D1 = ${d1}" (${(d1*2.54).toFixed(1)} cm)`;
-    document.getElementById('lbl_base').innerHTML = `D2 = ${d2}" (${(d2*2.54).toFixed(1)} cm)`;
-    document.getElementById('lbl_sb').innerHTML = `D3 = ${d3}" (${(d3*2.54).toFixed(1)} cm)`;
-    document.getElementById('lbl_sg').innerHTML = `CBR = ${document.getElementById('f_cbr').value}%`;
+    // 6. อัปเดตกราฟิก
+    document.getElementById('v_slab').style.height = (finalD * 12) + 'px';
+    document.getElementById('dim_slab').innerText = 'D = ' + finalD + '" (' + (finalD*2.54).toFixed(1) + ' cm)';
 }
 </script>
 </body>
 </html>
 """
 
-components.html(html_engineering_system, height=1000, scrolling=True)
+components.html(html_concrete_system, height=1000, scrolling=True)
